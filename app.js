@@ -1,3 +1,10 @@
+const { data: sessionData } = await supabase.auth.getSession();
+
+let user = sessionData.session?.user || null;
+if (user) {
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("appPage").style.display = "block";
+}
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
 const supabase = createClient(
@@ -34,14 +41,17 @@ window.login = async () => {
 
 // 🔄 SESSION CHECK (AUTO LOGIN)
 supabase.auth.onAuthStateChange((event, session) => {
-  user = session?.user;
+  user = session?.user || null;
 
   if (user) {
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("appPage").style.display = "block";
-    loadSlots();
+  } else {
+    document.getElementById("loginPage").style.display = "block";
+    document.getElementById("appPage").style.display = "none";
   }
 });
+
 
 // 🚪 LOGOUT
 window.logout = async () => {
