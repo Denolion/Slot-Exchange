@@ -1,30 +1,42 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const supabaseUrl = "https://kngeswiofipitijenvoo.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuZ2Vzd2lvZmlwaXRpamVudm9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MzU3NTcsImV4cCI6MjA5MjExMTc1N30.cBTH3m7c2LRKsi4lJuPMHrxMnoBnCh63K83K2ffES30";
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  "https://kngeswiofipitijenvoo.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuZ2Vzd2lvZmlwaXRpamVudm9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MzU3NTcsImV4cCI6MjA5MjExMTc1N30.cBTH3m7c2LRKsi4lJuPMHrxMnoBnCh63K83K2ffES30"
+);
 
 let user = null;
 
-// 🔐 EMAIL LOGIN
+// 🔐 LOGIN (FIXED)
 window.login = async () => {
-  const email = prompt("Enter your email");
+  const email = document.getElementById("email").value;
+
+  if (!email) return alert("Enter email first");
 
   const { error } = await supabase.auth.signInWithOtp({
     email
   });
 
-  if (!error) alert("Check your email for login link");
+  document.getElementById("status").innerText =
+    error ? error.message : "Check your email inbox 📩";
 };
 
-// TRACK USER
+// 🔄 SESSION CHECK (AUTO LOGIN)
 supabase.auth.onAuthStateChange((event, session) => {
   user = session?.user;
 
-  document.getElementById("user").innerText =
-    user ? `Logged in: ${user.email}` : "Not logged in";
+  if (user) {
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("appPage").style.display = "block";
+    loadSlots();
+  }
 });
+
+// 🚪 LOGOUT
+window.logout = async () => {
+  await supabase.auth.signOut();
+  location.reload();
+};
 
 // ➕ ADD SLOT
 window.addSlot = async () => {
@@ -47,7 +59,7 @@ function isMatch(a, b) {
   return a.current === b.desired && a.desired === b.current;
 }
 
-// 📥 LOAD DATA
+// 📥 LOAD
 window.loadSlots = async () => {
   let { data } = await supabase.from("slots").select("*");
 
@@ -61,26 +73,22 @@ window.loadSlots = async () => {
 
     let matched = data.some(o => o.id !== item.id && isMatch(item, o));
 
-    let contact = "🔒 Hidden until match";
+    let contact = "🔒 Locked";
 
     if (matched) {
       const phone = item.phone.replace(/^0/, "254");
-      contact = `
-        <a href="https://wa.me/${phone}" target="_blank">
-          <button>📱 WhatsApp</button>
-        </a>
-      `;
+      contact = `<a href="https://wa.me/${phone}" target="_blank">
+        <button>📱 WhatsApp</button>
+      </a>`;
     }
 
     list.innerHTML += `
-      <div class="card ${matched ? "match" : ""}">
+      <div class="card">
         <b>${item.name}</b>
         <p>${item.current} → ${item.desired}</p>
-        <p>💰 ${item.price}</p>
+        <p>${item.price}</p>
         ${contact}
       </div>
     `;
   });
 };
-
-loadSlots();
