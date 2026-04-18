@@ -1,0 +1,86 @@
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabaseUrl = "https://kngeswiofipitijenvoo.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuZ2Vzd2lvZmlwaXRpamVudm9vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MzU3NTcsImV4cCI6MjA5MjExMTc1N30.cBTH3m7c2LRKsi4lJuPMHrxMnoBnCh63K83K2ffES30";
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+let user = null;
+
+// 🔐 EMAIL LOGIN
+window.login = async () => {
+  const email = prompt("Enter your email");
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email
+  });
+
+  if (!error) alert("Check your email for login link");
+};
+
+// TRACK USER
+supabase.auth.onAuthStateChange((event, session) => {
+  user = session?.user;
+
+  document.getElementById("user").innerText =
+    user ? `Logged in: ${user.email}` : "Not logged in";
+});
+
+// ➕ ADD SLOT
+window.addSlot = async () => {
+  if (!user) return alert("Login first");
+
+  await supabase.from("slots").insert([{
+    name: name.value,
+    current: current.value.toLowerCase(),
+    desired: desired.value.toLowerCase(),
+    phone: phone.value,
+    price: price.value || "Negotiable",
+    user_id: user.id
+  }]);
+
+  loadSlots();
+};
+
+// 🔁 MATCH LOGIC
+function isMatch(a, b) {
+  return a.current === b.desired && a.desired === b.current;
+}
+
+// 📥 LOAD DATA
+window.loadSlots = async () => {
+  let { data } = await supabase.from("slots").select("*");
+
+  const search = document.getElementById("search").value?.toLowerCase();
+  const list = document.getElementById("list");
+
+  list.innerHTML = "";
+
+  data.forEach(item => {
+    if (search && !item.current.includes(search) && !item.desired.includes(search)) return;
+
+    let matched = data.some(o => o.id !== item.id && isMatch(item, o));
+
+    let contact = "🔒 Hidden until match";
+
+    if (matched) {
+      const phone = item.phone.replace(/^0/, "254");
+      contact = `
+        <a href="https://wa.me/${phone}" target="_blank">
+          <button>📱 WhatsApp</button>
+        </a>
+      `;
+    }
+
+    list.innerHTML += `
+      <div class="card ${matched ? "match" : ""}">
+        <b>${item.name}</b>
+        <p>${item.current} → ${item.desired}</p>
+        <p>💰 ${item.price}</p>
+        ${contact}
+      </div>
+    `;
+  });
+};
+
+loadSlots();
