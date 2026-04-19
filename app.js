@@ -52,7 +52,6 @@ supabase.auth.onAuthStateChange((event, session) => {
   }
 });
 
-
 // 🚪 LOGOUT
 window.logout = async () => {
   await supabase.auth.signOut();
